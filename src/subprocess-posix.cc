@@ -37,7 +37,8 @@ Subprocess::~Subprocess() {
     Finish();
 }
 
-bool Subprocess::Start(SubprocessSet* set, const string& command) {
+bool Subprocess::Start(SubprocessSet* set, const string& command,
+                       ProcessPriority subprocess_priority) {
   int output_pipe[2];
   if (pipe(output_pipe) < 0)
     Fatal("pipe: %s", strerror(errno));
@@ -95,6 +96,9 @@ bool Subprocess::Start(SubprocessSet* set, const string& command) {
       }
       // In the console case, output_pipe is still inherited by the child and
       // closed when the subprocess finishes, which then notifies ninja.
+
+      if (subprocess_priority == LOW_PRIORITY && nice(20) < 0)
+        break;
 
       execl("/bin/sh", "/bin/sh", "-c", command.c_str(), (char *) NULL);
     } while (false);
@@ -207,9 +211,11 @@ SubprocessSet::~SubprocessSet() {
     Fatal("sigprocmask: %s", strerror(errno));
 }
 
-Subprocess *SubprocessSet::Add(const string& command, bool use_console) {
+Subprocess *SubprocessSet::Add(const string& command,
+                               bool use_console,
+                               ProcessPriority subprocess_priority) {
   Subprocess *subprocess = new Subprocess(use_console);
-  if (!subprocess->Start(this, command)) {
+  if (!subprocess->Start(this, command, subprocess_priority)) {
     delete subprocess;
     return 0;
   }

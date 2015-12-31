@@ -323,6 +323,16 @@ bool ManifestParser::ParseEdge(string* err) {
     edge->pool_ = pool;
   }
 
+  string subprocess_priority = edge->GetBinding("subprocess_priority");
+  if (subprocess_priority.empty() || subprocess_priority == "default") {
+    edge->subprocess_priority_ = DEFAULT_PRIORITY;
+  } else if (subprocess_priority == "low") {
+    edge->subprocess_priority_ = LOW_PRIORITY;
+  } else {
+    return lexer_.Error(
+        "unknown process priority '" + subprocess_priority + "'", err);
+  }
+
   edge->outputs_.reserve(outs.size());
   for (vector<EvalString>::iterator i = outs.begin(); i != outs.end(); ++i) {
     string path = i->Evaluate(env);

@@ -28,6 +28,11 @@ using namespace std;
 
 #include "exit_status.h"
 
+enum ProcessPriority {
+  DEFAULT_PRIORITY,
+  LOW_PRIORITY,
+};
+
 /// Subprocess wraps a single async subprocess.  It is entirely
 /// passive: it expects the caller to notify it when its fds are ready
 /// for reading, as well as call Finish() to reap the child once done()
@@ -45,7 +50,9 @@ struct Subprocess {
 
  private:
   Subprocess(bool use_console);
-  bool Start(struct SubprocessSet* set, const string& command);
+  bool Start(struct SubprocessSet* set,
+             const string& command,
+             ProcessPriority subprocess_priority);
   void OnPipeReady();
 
   string buf_;
@@ -76,7 +83,8 @@ struct SubprocessSet {
   SubprocessSet();
   ~SubprocessSet();
 
-  Subprocess* Add(const string& command, bool use_console = false);
+  Subprocess* Add(const string& command, bool use_console = false,
+                  ProcessPriority subprocess_priority = DEFAULT_PRIORITY);
   bool DoWork();
   Subprocess* NextFinished();
   void Clear();

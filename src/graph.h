@@ -20,6 +20,7 @@
 using namespace std;
 
 #include "eval_env.h"
+#include "subprocess.h"
 #include "timestamp.h"
 
 struct BuildLog;
@@ -127,8 +128,8 @@ private:
 
 /// An edge in the dependency graph; links between Nodes using Rules.
 struct Edge {
-  Edge() : rule_(NULL), pool_(NULL), env_(NULL),
-           outputs_ready_(false), deps_missing_(false),
+  Edge() : rule_(NULL), pool_(NULL), subprocess_priority_(DEFAULT_PRIORITY),
+           env_(NULL), outputs_ready_(false), deps_missing_(false),
            implicit_deps_(0), order_only_deps_(0) {}
 
   /// Return true if all inputs' in-edges are ready.
@@ -152,6 +153,7 @@ struct Edge {
 
   const Rule* rule_;
   Pool* pool_;
+  ProcessPriority subprocess_priority_;
   vector<Node*> inputs_;
   vector<Node*> outputs_;
   BindingEnv* env_;
@@ -160,6 +162,7 @@ struct Edge {
 
   const Rule& rule() const { return *rule_; }
   Pool* pool() const { return pool_; }
+  ProcessPriority subprocess_priority() const { return subprocess_priority_; }
   int weight() const { return 1; }
   bool outputs_ready() const { return outputs_ready_; }
 

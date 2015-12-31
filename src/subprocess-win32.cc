@@ -72,7 +72,8 @@ HANDLE Subprocess::SetupPipe(HANDLE ioport) {
   return output_write_child;
 }
 
-bool Subprocess::Start(SubprocessSet* set, const string& command) {
+bool Subprocess::Start(SubprocessSet* set, const string& command,
+                       ProcessPriority subprocess_priority) {
   HANDLE child_pipe = SetupPipe(set->ioport_);
 
   SECURITY_ATTRIBUTES security_attributes;
@@ -103,6 +104,9 @@ bool Subprocess::Start(SubprocessSet* set, const string& command) {
 
   // Ninja handles ctrl-c, except for subprocesses in console pools.
   DWORD process_flags = use_console_ ? 0 : CREATE_NEW_PROCESS_GROUP;
+
+  if (subprocess_priority_ == LOW_PRIORITY)
+    process_flags |= BELOW_NORMAL_PRIORITY_CLASS;
 
   // Do not prepend 'cmd /c' on Windows, this breaks command
   // lines greater than 8,191 chars.
@@ -223,9 +227,10 @@ BOOL WINAPI SubprocessSet::NotifyInterrupted(DWORD dwCtrlType) {
   return FALSE;
 }
 
-Subprocess *SubprocessSet::Add(const string& command, bool use_console) {
+Subprocess *SubprocessSet::Add(const string& command, bool use_console,
+                               ProcessPriority subprocess_priority) {
   Subprocess *subprocess = new Subprocess(use_console);
-  if (!subprocess->Start(this, command)) {
+  if (!subprocess->Start(this, command, subprocess_priority)) {
     delete subprocess;
     return 0;
   }
